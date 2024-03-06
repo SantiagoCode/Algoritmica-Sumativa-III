@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Reservas de Sala de Conferencias</title>
+  <style>
+    /* Estilos CSS */
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    input, select {
+      margin-bottom: 10px;
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .message {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .success {
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+    .reservation {
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 5px;
+    }
+    .in-progress {
+      background-color: #ffc107;
+    }
+    .scheduled {
+      background-color: #007bff;
+      color: #fff;
+    }
+    .completed {
+      background-color: #28a745;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Gestión de Reservas de Sala de Conferencias</h1>
+    <form id="reservationForm">
+      <label for="sala">Seleccione la sala de conferencias:</label>
+      <select id="sala" required>
+        <option value="">Seleccione una sala...</option>
+        <option value="sala1">Sala 1</option>
+        <option value="sala2">Sala 2</option>
+        <option value="sala3">Sala 3</option>
+      </select>
+      <label for="fechaInicio">Fecha y hora de inicio de la reserva:</label>
+      <input type="datetime-local" id="fechaInicio" required>
+      <label for="fechaFin">Fecha y hora de fin de la reserva:</label>
+      <input type="datetime-local" id="fechaFin" required>
+      <button type="submit">Reservar Sala</button>
+    </form>
+    <div id="message" class="message" style="display: none;"></div>
+    <div id="registro"></div>
+  </div>
+
+  <script>
+    // JavaScript para gestionar la reserva de salas
+    var reservas = [];
+
+    document.getElementById('reservationForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      var sala = document.getElementById('sala').value;
+      var fechaInicio = new Date(document.getElementById('fechaInicio').value);
+      var fechaFin = new Date(document.getElementById('fechaFin').value);
+
+      // Lógica para verificar disponibilidad y mostrar mensajes
+      var disponibilidad = verificarDisponibilidad(sala, fechaInicio, fechaFin);
+      if (disponibilidad === 'disponible') {
+        reservas.push({
+          sala: sala,
+          fechaInicio: fechaInicio,
+          fechaFin: fechaFin
+        });
+        actualizarRegistro();
+        showMessage('success', 'Reserva realizada correctamente para la Sala ' + sala + ' desde ' + fechaInicio.toLocaleString() + ' hasta ' + fechaFin.toLocaleString() + '.');
+      } else if (disponibilidad === 'en_curso') {
+        showMessage('error', 'La sala ' + sala + ' está ocupada en este momento.');
+      } else if (disponibilidad === 'programada') {
+        showMessage('error', 'La sala ' + sala + ' está reservada en este horario.');
+      }
+    });
+
+    function verificarDisponibilidad(sala, fechaInicio, fechaFin) {
+      var now = new Date();
+      for (var i = 0; i < reservas.length; i++) {
+        var reserva = reservas[i];
+        if (reserva.sala === sala) {
+          if ((fechaInicio >= reserva.fechaInicio && fechaInicio < reserva.fechaFin) || (fechaFin > reserva.fechaInicio && fechaFin <= reserva.fechaFin)) {
+            if (now >= reserva.fechaInicio && now <= reserva.fechaFin) {
+              return 'en_curso';
+            } else {
+              return 'programada';
+            }
+          }
+        }
+      }
+      return 'disponible';
+    }
+
+    function actualizarRegistro() {
+      var registroDiv = document.getElementById('registro');
+      registroDiv.innerHTML = '';
+      for (var i = 0; i < reservas.length; i++) {
+        var reserva = reservas[i];
+        var status = getStatus(reserva);
+        var statusClass = status === 'en_curso' ? 'in-progress' : status === 'programada' ? 'scheduled' : 'completed';
+        registroDiv.innerHTML += '<div class="reservation ' + statusClass + '">Sala: ' + reserva.sala + ', Desde: ' + reserva.fechaInicio.toLocaleString() + ', Hasta: ' + reserva.fechaFin.toLocaleString() + '</div>';
+      }
+    }
+
+    function getStatus(reserva) {
+      var now = new Date();
+      if (now >= reserva.fechaInicio && now <= reserva.fechaFin) {
+        return 'en_curso';
+      } else if (now > reserva.fechaFin) {
+        return 'completada';
+      } else {
+        return 'programada';
+      }
+    }
+
+    function showMessage(type, message) {
+      var messageDiv = document.getElementById('message');
+      messageDiv.textContent = message;
+      messageDiv.className = 'message ' + type;
+      messageDiv.style.display = 'block';
+    }
+
+    // Actualizar el registro al cargar la página
+    window.addEventListener('load', function() {
+      actualizarRegistro();
+    });
+  </script>
+</body>
+</html>
